@@ -2,14 +2,35 @@
 
 namespace App\Repositories;
 
-class BaseRepository {
+abstract class BaseRepository {
     protected $model;
 
+    public function __construct()
+    {
+        $this->model = $this->getModel();
+    }
 
+    abstract  function getModel();
 
-    abstract function getModel();
+    public function all()  {
+        return $this->model->all();
+    }
 
-    protected function FunctionName() : Returntype {
-        return null;
+    public function find($id)
+    {
+        return $this->model->find($id);
+    }
+
+    public function findBy($conditions)
+    {
+        return $this->model->where($conditions);
+    }
+
+    public function createOrUpdate($attributes) {
+        if (isset($attributes['id'])) {
+            return $this->find($attributes['id'])->update($attributes);
+        }
+
+        return $this->model->create($attributes);
     }
 }
