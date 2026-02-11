@@ -26,8 +26,13 @@ abstract class BaseRepository {
         return $this->model->where($conditions);
     }
 
+    public function delete($id)
+    {
+        return $this->model->find($id)?->delete();
+    }
+
     public function createOrUpdate($attributes) {
-        if (isset($attributes['id'])) {
+        if ($attributes['id']) {
             return $this->find($attributes['id'])->update($attributes);
         }
 
