@@ -32,7 +32,7 @@ abstract class BaseRepository {
     }
 
     public function createOrUpdate($attributes) {
-        if ($attributes['id']) {
+        if (isset($attributes['id'])) {
             return $this->find($attributes['id'])->update($attributes);
         }
 

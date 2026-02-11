@@ -20,7 +20,7 @@ class BaseApiController extends Controller
     {
         $data = [
             'data' => $data,
-            'message' => $message,
+            'message' =>   $data->getMessage() ? $data->getMessage() : $message,
         ];
         return response()->json($data, $statusCode);
     }
