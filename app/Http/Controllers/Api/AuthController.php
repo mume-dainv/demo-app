@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\AuthRequest;
-use App\Http\Resources\ProfileResource;
 use App\Repositories\UserLoggingRepository;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
@@ -31,7 +30,7 @@ class AuthController extends BaseApiController
             if (RateLimiter::tooManyAttempts($key, 3)) {
                 $seconds = RateLimiter::availableIn($key);
 
-                return $this->sendErrorResponse([], "Too many attempts! try after {$seconds} seconds.");
+                return $this->sendErrorResponse([], "Too many attempts! Try after {$seconds} seconds.");
             }
 
             if (!$tokenResult) {
@@ -74,9 +73,6 @@ class AuthController extends BaseApiController
             return $this->sendErrorResponse($e,"token refresh failed");
         }
     }
-
-
-
 
     protected function throttleKey($request)
     {

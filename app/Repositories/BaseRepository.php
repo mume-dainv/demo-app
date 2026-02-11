@@ -36,10 +36,7 @@ abstract class BaseRepository {
         return $this->model->create($data);
     }
 
-    public function update($data, $condition = null) {
-        if (!$condition) {
-            $condition = ['id' => $data['id']];
-        }
-        return $this->model->where($condition)->first()->update($data);
+    public function update($id,$data ) {
+        return $this->find($id)->update($data);
     }
 }
