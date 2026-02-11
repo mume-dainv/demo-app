@@ -21,5 +21,8 @@ Route::post('refresh', [\App\Http\Controllers\Api\Admin\AuthController::class, '
 Route::middleware(['auth:api', 'permission'])->prefix('admin')->group(function () {
     Route::prefix('users')->group(function () {
         Route::get('/', [\App\Http\Controllers\Api\Admin\UserController::class, 'index']);
+        Route::post('/', [\App\Http\Controllers\Api\Admin\UserController::class, 'store']);
+        Route::put('/{id}', [\App\Http\Controllers\Api\Admin\UserController::class, 'update']);
+        Route::delete('/{id}', [\App\Http\Controllers\Api\Admin\UserController::class, 'delete']);
     });
 });

@@ -26,11 +26,20 @@ abstract class BaseRepository {
         return $this->model->where($conditions);
     }
 
-    public function createOrUpdate($attributes) {
-        if (isset($attributes['id'])) {
-            return $this->find($attributes['id'])->update($attributes);
-        }
+    public function delete($id)
+    {
+        return $this->model->find($id)?->delete();
+    }
 
-        return $this->model->create($attributes);
+    public function create($data)
+    {
+        return $this->model->create($data);
+    }
+
+    public function update($data, $condition = null) {
+        if (!$condition) {
+            $condition = ['id' => $data['id']];
+        }
+        return $this->model->where($condition)->first()->update($data);
     }
 }
