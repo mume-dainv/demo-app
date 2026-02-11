@@ -75,10 +75,8 @@ class AuthController extends BaseApiController
         }
     }
 
-    public function me()
-    {
-        return $this->sendResponse(new ProfileResource(auth()->user()), 'User retrieved successfully.');
-    }
+
+
 
     protected function throttleKey($request)
     {
