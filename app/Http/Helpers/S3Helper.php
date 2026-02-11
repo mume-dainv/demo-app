@@ -17,7 +17,7 @@ class S3Helper
 
     public static function getUrl($path): string
     {
-        return Storage::temporaryUrl($path, now()->addMinutes(5));
+        return Storage::disk('s3')->temporaryUrl($path, now()->addMinutes(5));
     }
 
     private static function generateAvatarPath(UploadedFile $file): string

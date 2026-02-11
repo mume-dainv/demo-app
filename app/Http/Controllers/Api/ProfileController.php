@@ -29,8 +29,9 @@ class ProfileController extends BaseApiController
             DB::beginTransaction();
             $avatarPath = S3Helper::upload($request->file('avatar'));
             $dataUpdate = [...$data, 'avatar' => $avatarPath, 'id' => auth()->user()->id];
-            $userUpdated = $this->userRepository->
+            $this->userRepository->update($dataUpdate);
             DB::commit();
+            return $this->sendResponse([], 'User updated successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
             return $this->sendErrorResponse($e);
