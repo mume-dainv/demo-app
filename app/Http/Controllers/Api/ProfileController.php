@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Helpers\S3Helper;
-use App\Http\Requests\UpdateMeRequest;
+use App\Http\Requests\UpdateProfileRequest;
 use App\Http\Resources\ProfileResource;
 use App\Repositories\UserRepository;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +14,7 @@ class ProfileController extends BaseApiController
     {
     }
 
-    public function me()
+    public function profile()
     {
         return $this->sendResponse(new ProfileResource(auth()->user()), 'User retrieved successfully.');
     }
@@ -22,14 +22,22 @@ class ProfileController extends BaseApiController
     /**
      * @throws \Throwable
      */
-    public function updateMe(UpdateMeRequest $request)
+    public function updateProfile(UpdateProfileRequest $request)
     {
         $data = $request->validated();
         try {
             DB::beginTransaction();
-            $avatarPath = S3Helper::upload($request->file('avatar'));
-            $dataUpdate = [...$data, 'avatar' => $avatarPath, 'id' => auth()->user()->id];
-            $this->userRepository->update($dataUpdate);
+            $file = $request->file('avatar');
+            $user = auth()->user();
+            $avatarPath = $user->avatar;
+            if ($file) {
+                if ($avatarPath) {
+                    S3Helper::delete($avatarPath);
+                }
+                $avatarPath = S3Helper::upload($request->file('avatar'));
+            }
+            $dataUpdate = [...$data, 'avatar' => $avatarPath];
+            $this->userRepository->update($user->id, $dataUpdate);
             DB::commit();
             return $this->sendResponse([], 'User updated successfully.');
         } catch (\Exception $e) {
@@ -37,6 +45,4 @@ class ProfileController extends BaseApiController
             return $this->sendErrorResponse($e);
         }
     }
-
-
 }

@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests;
 
-class UpdateMeRequest extends BaseRequest
+class UpdateProfileRequest extends BaseRequest
 {
 
     /**

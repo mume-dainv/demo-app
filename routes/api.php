@@ -18,8 +18,8 @@ Route::post('logout', [\App\Http\Controllers\Api\AuthController::class, 'logout'
 Route::post('refresh', [\App\Http\Controllers\Api\AuthController::class, 'refresh']);
 
 Route::middleware('auth:api')->group(function () {
-    Route::get('me', [\App\Http\Controllers\Api\ProfileController::class, 'me']);
-    Route::post('me', [\App\Http\Controllers\Api\ProfileController::class, 'updateMe']);
+    Route::get('me', [\App\Http\Controllers\Api\ProfileController::class, 'profile']);
+    Route::post('me', [\App\Http\Controllers\Api\ProfileController::class, 'updateProfile']);
 });
 
 Route::middleware(['auth:api', 'permission'])->prefix('admin')->group(function () {

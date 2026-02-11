@@ -52,13 +52,12 @@ class UserController extends BaseApiController
     public function update($id, UpdateUserRequest $request)
     {
         $data = $request->validated();
-        $data['id'] = $id;
         try {
             DB::beginTransaction();
             if (!$this->userRepository->find($id)) {
                 return $this->sendErrorResponse([], 'User not found.', ResponseAlias::HTTP_NOT_FOUND);
             }
-            $user = $this->userRepository->update($data);
+            $user = $this->userRepository->update($id,$data);
             DB::commit();
             return $this->sendResponse($user, 'User has been updated successfully.');
         } catch (\Exception $e) {
