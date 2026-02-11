@@ -16,7 +16,6 @@ class UpdateUserRequest extends BaseRequest
     {
         return [
             'name' => 'required|string|max:255',
-            'role' => [new Enum(RoleEnums::class)],
         ];
     }
 }

@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 use Throwable;
 
 class UserController extends BaseApiController
@@ -34,7 +35,7 @@ class UserController extends BaseApiController
             DB::beginTransaction();
             $password = Str::random(8);
             $data['password'] = Hash::make($password);
-            $newUser = $this->userRepository->createOrUpdate($data);
+            $newUser = $this->userRepository->create($data);
             $data['password'] = $password;
             Mail::to($data['email'])->queue(new RegisterUserMail($data));
             DB::commit();
@@ -55,9 +56,9 @@ class UserController extends BaseApiController
         try {
             DB::beginTransaction();
             if (!$this->userRepository->find($id)) {
-                return $this->sendResponse([], 'User not found.');
+                return $this->sendErrorResponse([], 'User not found.', ResponseAlias::HTTP_NOT_FOUND);
             }
-            $user = $this->userRepository->createOrUpdate($data);
+            $user = $this->userRepository->update($data);
             DB::commit();
             return $this->sendResponse($user, 'User has been updated successfully.');
         } catch (\Exception $e) {
