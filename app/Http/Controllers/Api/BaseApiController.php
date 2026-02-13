@@ -16,11 +16,20 @@ class BaseApiController extends Controller
         return response()->json($data, $statusCode);
     }
 
+    protected function sendResponseWithCookie($data, $cookie = [],$message = 'success', $statusCode = ResponseAlias::HTTP_OK)
+    {
+        $data = [
+            'data' => $data,
+            'message' => $message,
+        ];
+        return response()->json($data, $statusCode)->cookie(...$cookie);
+    }
+
     protected function sendErrorResponse($data, $message = 'error', $statusCode = ResponseAlias::HTTP_INTERNAL_SERVER_ERROR)
     {
         $data = [
             'data' => $data,
-            'message' =>   $data->getMessage() ? $data->getMessage() : $message,
+            'message' => $message,
         ];
         return response()->json($data, $statusCode);
     }
