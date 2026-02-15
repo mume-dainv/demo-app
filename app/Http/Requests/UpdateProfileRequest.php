@@ -14,7 +14,7 @@ class UpdateProfileRequest extends BaseRequest
     {
         return [
             'name' => 'required|string',
-            'avatar' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ];
     }
 }

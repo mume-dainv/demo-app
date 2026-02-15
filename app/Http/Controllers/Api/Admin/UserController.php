@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Api\BaseApiController;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+use App\Http\Resources\UserResource;
 use App\Mail\RegisterUserMail;
 use App\Repositories\UserRepository;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +23,7 @@ class UserController extends BaseApiController
 
     public function index()
     {
-        return $this->userRepository->all();
+        return $this->sendResponse(['users' => UserResource::collection($this->userRepository->all())]);
     }
 
     /**
@@ -46,6 +47,10 @@ class UserController extends BaseApiController
         }
     }
 
+    public function show($id)
+    {
+        return $this->sendResponse(['users' => new UserResource($this->userRepository->find($id))]);
+    }
     /**
      * @throws Throwable
      */

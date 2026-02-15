@@ -16,7 +16,7 @@ class ProfileController extends BaseApiController
 
     public function profile()
     {
-        return $this->sendResponse(new ProfileResource(auth()->user()), 'User retrieved successfully.');
+        return $this->sendResponse(['user' => new ProfileResource(auth()->user())], 'User retrieved successfully.');
     }
 
     /**

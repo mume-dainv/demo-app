@@ -22,7 +22,7 @@ class S3Helper
 
     public static function getUrl($path): string
     {
-        return Storage::disk(env('FILESYSTEM_DISK'))->temporaryUrl($path, now()->addMinutes(5));
+        return $path ? Storage::disk(env('FILESYSTEM_DISK'))->temporaryUrl($path, now()->addMinutes(5)) : '';
     }
 
     private static function generateAvatarPath(UploadedFile $file): string

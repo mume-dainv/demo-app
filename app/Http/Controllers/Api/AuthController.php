@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\AuthRequest;
+use App\Http\Resources\ProfileResource;
 use App\Repositories\UserLoggingRepository;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
@@ -47,7 +48,15 @@ class AuthController extends BaseApiController
             ]);
             RateLimiter::clear($key);
             DB::commit();
-            return $this->sendResponse(['user' => $user, 'access_token' => $tokenResult], 'User logged in successfully.');
+            return $this->sendResponseWithCookie(['user' => new ProfileResource($user)], ['token',
+                $tokenResult,
+                env('JWT_TTL'),
+                '/',
+                null,
+                true,         // secure (https production)
+                true,         // httpOnly
+                false,
+                'Strict' ] ,'User logged in successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
             return $this->sendErrorResponse($e);
@@ -58,7 +67,7 @@ class AuthController extends BaseApiController
     {
         try {
             JWTAuth::invalidate(JWTAuth::getToken());
-            return $this->sendResponse([],'User logout successfully.');
+            return $this->sendResponseWithCookie([],['token', null, -1, '/', null, true, true, false, 'Lax'],'User logout successfully.');
         } catch (\Exception $e) {
             return $this->sendErrorResponse($e);
         }
@@ -68,7 +77,15 @@ class AuthController extends BaseApiController
     {
         try {
             $token = auth()->refresh();
-            return $this->sendResponse(['token' => $token], 'Refresh Token successfully.');
+            return $this->sendResponseWithCookie([], ['token',
+                $token,
+                env('JWT_TTL'),
+                '/',
+                null,
+                true,         // secure (https production)
+                true,         // httpOnly
+                false,
+                'Strict' ],'Refresh Token successfully.');
         } catch (\Exception $e) {
             return $this->sendErrorResponse($e,"token refresh failed");
         }
