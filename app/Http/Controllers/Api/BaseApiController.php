@@ -25,7 +25,7 @@ class BaseApiController extends Controller
         return response()->json($data, $statusCode)->cookie(...$cookie);
     }
 
-    protected function sendErrorResponse($data, $message = 'error', $statusCode = ResponseAlias::HTTP_INTERNAL_SERVER_ERROR)
+    protected function sendErrorResponse($data, $message = 'error', $statusCode = ResponseAlias::HTTP_BAD_REQUEST)
     {
         $data = [
             'data' => $data,

@@ -56,7 +56,7 @@ class AuthController extends BaseApiController
                 true,         // secure (https production)
                 true,         // httpOnly
                 false,
-                'Strict' ] ,'User logged in successfully.');
+                'Lax' ] ,'User logged in successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
             return $this->sendErrorResponse($e);
