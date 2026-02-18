@@ -8,6 +8,7 @@ use App\Repositories\UserLoggingRepository;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends BaseApiController
@@ -26,7 +27,7 @@ class AuthController extends BaseApiController
             DB::beginTransaction();
             $tokenResult = auth()->attempt($data);
 
-            $key =  $this->throttleKey($request);
+            $key = $this->throttleKey($request);
 
             if (RateLimiter::tooManyAttempts($key, 3)) {
                 $seconds = RateLimiter::availableIn($key);
@@ -48,7 +49,8 @@ class AuthController extends BaseApiController
             ]);
             RateLimiter::clear($key);
             DB::commit();
-            return $this->sendResponseWithCookie(['user' => new ProfileResource($user)], ['token',
+            return $this->sendResponseWithCookie(['user' => new ProfileResource($user)], [
+                'token',
                 $tokenResult,
                 env('JWT_TTL'),
                 '/',
@@ -56,7 +58,8 @@ class AuthController extends BaseApiController
                 true,         // secure (https production)
                 true,         // httpOnly
                 false,
-                'Lax' ] ,'User logged in successfully.');
+                'Lax'
+            ], 'User logged in successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
             return $this->sendErrorResponse($e);
@@ -67,7 +70,9 @@ class AuthController extends BaseApiController
     {
         try {
             JWTAuth::invalidate(JWTAuth::getToken());
-            return $this->sendResponseWithCookie([],['token', null, -1, '/', null, true, true, false, 'Lax'],'User logout successfully.');
+            return $this->sendResponseWithCookie([],
+                ['token', null, -1, '/', null, true, true, false, 'Lax'],
+                'User logout successfully.');
         } catch (\Exception $e) {
             return $this->sendErrorResponse($e);
         }
@@ -77,7 +82,8 @@ class AuthController extends BaseApiController
     {
         try {
             $token = auth()->refresh();
-            return $this->sendResponseWithCookie([], ['token',
+            return $this->sendResponseWithCookie([], [
+                'token',
                 $token,
                 env('JWT_TTL'),
                 '/',
@@ -85,14 +91,15 @@ class AuthController extends BaseApiController
                 true,         // secure (https production)
                 true,         // httpOnly
                 false,
-                'Strict' ],'Refresh Token successfully.');
+                'Lax'
+            ], 'Refresh Token successfully.');
         } catch (\Exception $e) {
-            return $this->sendErrorResponse($e,"token refresh failed");
+            return $this->sendErrorResponse($e, "token refresh failed", ResponseAlias::HTTP_UNAUTHORIZED);
         }
     }
 
     protected function throttleKey($request)
     {
-        return Str::lower($request->email).'|'.$request->ip();
+        return Str::lower($request->email) . '|' . $request->ip();
     }
 }
