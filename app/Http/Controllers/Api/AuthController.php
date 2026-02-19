@@ -47,6 +47,7 @@ class AuthController extends BaseApiController
                 'ip' => $request->getClientIp(),
                 'user_agent' => $request->userAgent(),
             ]);
+
             RateLimiter::clear($key);
             DB::commit();
             return $this->sendResponseWithCookie(['user' => new ProfileResource($user)], [
@@ -62,7 +63,7 @@ class AuthController extends BaseApiController
             ], 'User logged in successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->sendErrorResponse($e);
+            return $this->sendErrorResponse([], $e->getMessage());
         }
     }
 
@@ -74,7 +75,7 @@ class AuthController extends BaseApiController
                 ['token', null, -1, '/', null, true, true, false, 'Lax'],
                 'User logout successfully.');
         } catch (\Exception $e) {
-            return $this->sendErrorResponse($e);
+            return $this->sendErrorResponse([], $e->getMessage());
         }
     }
 
