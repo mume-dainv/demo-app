@@ -49,7 +49,7 @@ class UserController extends BaseApiController
 
     public function show($id)
     {
-        return $this->sendResponse(['users' => new UserResource($this->userRepository->find($id))]);
+        return $this->sendResponse(['user' => new UserResource($this->userRepository->find($id))]);
     }
     /**
      * @throws Throwable
