@@ -4,7 +4,8 @@ namespace App\Repositories;
 
 use App\Models\UserLogging;
 
-class UserLoggingRepository extends BaseRepository {
+class UserLoggingRepository extends BaseRepository
+{
 
     function getModel()
     {
@@ -13,10 +14,11 @@ class UserLoggingRepository extends BaseRepository {
 
     public function createOrUpdateByUserId($attributes)
     {
-        $userLogging = $this->findBy(['user_id' => $attributes['user_id']])->first();
-        if ($userLogging) {
-            return $userLogging->update($attributes);
+        $userLogging = $this->findBy(['user_id' => $attributes['user_id']], 'updated_at')->get();
+        if ($userLogging->count() == 5) {
+            return $userLogging->first()->update($attributes);
         }
+
         return $this->model->create($attributes);
     }
 }

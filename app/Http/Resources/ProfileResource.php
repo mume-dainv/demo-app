@@ -15,15 +15,15 @@ class ProfileResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $userLogging = $this->userLogging;
+        $userLogging = $this->userLogging()->orderBy('updated_at', 'DESC')->get();
         return [
             'name' => $this->name,
             'email' => $this->email,
-            'avatar' => S3Helper::getUrl($this->avatar),
+            'avatar' => $this->avatar,
+            'avatar_url' => S3Helper::getUrl($this->avatar),
             'role' => $this->role,
-            'ip' => $userLogging?->ip,
-            'user_agent' => $userLogging?->user_agent,
-            'last_login_at' => $userLogging?->updated_at->format('Y-m-d H:i:s'),
+            'user_logging' => UserLoggingResource::collection($userLogging),
+
         ];
     }
 }
