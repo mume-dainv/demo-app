@@ -5,6 +5,8 @@ namespace App\Imports;
 use App\Enums\RoleEnums;
 use App\Mail\RegisterUserMail;
 use App\Models\LogImport;
+use App\Models\User;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -15,13 +17,14 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Enum;
 use Maatwebsite\Excel\Concerns\Importable;
+use Maatwebsite\Excel\Concerns\RemembersChunkOffset;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
-class UsersImport implements ToCollection, WithHeadingRow, WithChunkReading, ShouldQueue
+class UsersImport implements ToCollection, WithHeadingRow, WithChunkReading, ShouldQueue, ShouldBeUnique
 {
-    use Importable;
+    use Importable, RemembersChunkOffset;
 
     public function __construct(protected $fileName = '', protected $user)
     {
@@ -36,13 +39,13 @@ class UsersImport implements ToCollection, WithHeadingRow, WithChunkReading, Sho
         $dataInsert = [];
         $dataError = [];
         $mailSend = [];
-
+        $rowNumber = $this->getChunkOffset() - 1;
         foreach ($collection as $index => $row) {
             $validate = Validator::make($row, $this->userImportRulesValidation());
             try {
                 $validate->validate();
             } catch (\Exception $e) {
-                $dataError[] = ['row ' . $index + 1 => $validate->errors()];
+                $dataError[] = ['row ' . $rowNumber + $index => $validate->errors()];
                 continue;
             }
             $password = Str::random(8);
@@ -53,16 +56,18 @@ class UsersImport implements ToCollection, WithHeadingRow, WithChunkReading, Sho
 
         DB::beginTransaction();
         try {
-            DB::table('users')->insert($dataInsert);
-            $log = DB::table('log_import')->where([
+            User::upsert($dataInsert, ['email']);
+
+            $log = LogImport::where([
                     ['user_id', $this->user->id],
                     ['file_name', $this->fileName]]
             )->first();
+
             if ($log) {
-                DB::table('log_import')->where([
+                LogImport::where([
                         ['user_id', $this->user->id],
                         ['file_name', $this->fileName]]
-                )->update(['message' => $log->message . '\n ' . $dataError]);
+                )->update(['messages' => array_merge(json_decode($log->messages), $dataError)]);
             } else {
                 LogImport::create([
                     'user_id' => $this->user->id,

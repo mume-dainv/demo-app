@@ -16,7 +16,7 @@ class LogImportResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'message' => json_decode($this->messages),
+            'messages' => json_decode($this->messages),
             'file_name' => $this->file_name,
             'date' => $this->created_at->format('d-m-Y H:i:s'),
         ];
