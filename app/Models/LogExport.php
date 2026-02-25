@@ -7,29 +7,23 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-class LogImport extends Model
+class LogExport extends Model
 {
     use HasFactory;
 
-    protected $table = 'log_import';
-
     protected $fillable = [
         'user_id',
-        'messages',
-        'file_name',
-        'total_row',
-        'row_fail',
-        'row_success',
-        'job_tracking_id'
+        'job_tracking_id',
+        'file_path',
     ];
 
-    public function User(): BelongsTo
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function jobTracking(): HasOne
+    public function jobTracking(): BelongsTo
     {
-        return $this->hasOne(JobTracking::class);
+        return $this->belongsTo(JobTracking::class);
     }
 }

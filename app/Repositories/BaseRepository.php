@@ -20,6 +20,11 @@ abstract class BaseRepository
         return $this->model->all();
     }
 
+    public function paginate($conditions = [], $select = ['*'], $page = 1,$perPage = 10,)
+    {
+        return $this->model->where($conditions)->paginate($perPage, $select , 'page',$page);
+    }
+
     public function find($id)
     {
         return $this->model->find($id);

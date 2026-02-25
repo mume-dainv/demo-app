@@ -28,6 +28,9 @@ Route::middleware(['auth:api', 'permission'])->prefix('admin')->group(function (
         Route::post('/', [\App\Http\Controllers\Api\Admin\UserController::class, 'store']);
         Route::post('/import', [\App\Http\Controllers\Api\Admin\UserController::class, 'import']);
         Route::get('/log_import', [\App\Http\Controllers\Api\Admin\UserController::class, 'logImport']);
+        Route::post('/export', [\App\Http\Controllers\Api\Admin\UserController::class, 'exportUsers']);
+        Route::get('/export', [\App\Http\Controllers\Api\Admin\UserController::class, 'jobExportUsers']);
+        Route::post('/download_export', [\App\Http\Controllers\Api\Admin\UserController::class, 'downloadExportUsers']);
         Route::delete('/log_import/{id}', [\App\Http\Controllers\Api\Admin\UserController::class, 'deleteLogImport'])->whereNumber('id');
         Route::get('/{id}', [\App\Http\Controllers\Api\Admin\UserController::class, 'show']);
         Route::put('/{id}', [\App\Http\Controllers\Api\Admin\UserController::class, 'update']);

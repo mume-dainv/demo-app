@@ -69,4 +69,14 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->hasOne(LogImport::class);
     }
+
+    public function logExport(): HasOne
+    {
+        return $this->hasOne(LogExport::class);
+    }
+
+    public function jobTracking(): HasOne
+    {
+        return $this->hasOne(JobTracking::class);
+    }
 }

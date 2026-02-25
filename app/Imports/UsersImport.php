@@ -2,12 +2,16 @@
 
 namespace App\Imports;
 
+use App\Enums\JobStatusEnum;
 use App\Enums\RoleEnums;
 use App\Mail\RegisterUserMail;
+use App\Models\JobTracking;
 use App\Models\LogImport;
 use App\Models\User;
+use Illuminate\Contracts\Queue\Job;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -20,13 +24,15 @@ use Maatwebsite\Excel\Concerns\Importable;
 use Maatwebsite\Excel\Concerns\RemembersChunkOffset;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
+use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Events\ImportFailed;
 
-class UsersImport implements ToCollection, WithHeadingRow, WithChunkReading, ShouldQueue, ShouldBeUnique
+class UsersImport implements ToCollection, WithHeadingRow, WithChunkReading, ShouldQueue, ShouldBeUnique, WithEvents
 {
     use Importable, RemembersChunkOffset;
 
-    public function __construct(protected $fileName = '', protected $user)
+    public function __construct(protected $fileName = '', protected $user, protected $jobName)
     {
     }
 
@@ -52,6 +58,7 @@ class UsersImport implements ToCollection, WithHeadingRow, WithChunkReading, Sho
             $row['password'] = Hash::make($password);
             $dataInsert[] = $row;
             $mailSend[] = ['email' => $row['email'], 'password' => $password];
+
         }
 
         DB::beginTransaction();
@@ -62,19 +69,19 @@ class UsersImport implements ToCollection, WithHeadingRow, WithChunkReading, Sho
                     ['user_id', $this->user->id],
                     ['file_name', $this->fileName]]
             )->first();
-
             if ($log) {
                 LogImport::where([
                         ['user_id', $this->user->id],
                         ['file_name', $this->fileName]]
-                )->update(['messages' => array_merge(json_decode($log->messages), $dataError)]);
-            } else {
-                LogImport::create([
-                    'user_id' => $this->user->id,
-                    'messages' => json_encode($dataError),
-                    'file_name' => $this->fileName,
-                ]);
+                )->update(
+                    [
+                        'errors' => array_merge(json_decode($log->errors ?? '[]'), $dataError),
+                        'row_fail' => $log->row_fail + count($dataError),
+                        'row_success' => $log->row_success + count($dataInsert),
+                    ]
+                );
             }
+
             DB::afterCommit(function () use ($mailSend) {
                 foreach ($mailSend as $row) {
                     Mail::to($row['email'])
@@ -105,5 +112,27 @@ class UsersImport implements ToCollection, WithHeadingRow, WithChunkReading, Sho
     public function chunkSize(): int
     {
         return 200;
+    }
+
+    public function fail($exception = null): void
+    {
+        JobTracking::where([
+            'user_id' => $this->user->id,
+            'job_name' => $this->jobName
+        ])->update([
+            'status' => JobStatusEnum::Failed->value
+        ]);
+    }
+
+    public function registerEvents(): array
+    {
+        return [ImportFailed::class => function (ImportFailed $event) {
+            JobTracking::where([
+                'user_id' => $this->user->id,
+                'job_name' => $this->jobName
+            ])->update([
+                'status' => JobStatusEnum::Failed->value
+            ]);;
+        }];
     }
 }

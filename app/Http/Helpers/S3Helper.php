@@ -15,6 +15,11 @@ class S3Helper
 
     }
 
+    public static function download($path): string
+    {
+        return Storage::disk(env('FILESYSTEM_DISK'))->download($path);
+    }
+
     public static function delete(string $path): void
     {
         Storage::disk(env('FILESYSTEM_DISK'))->delete($path);

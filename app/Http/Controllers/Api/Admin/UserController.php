@@ -2,32 +2,48 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Enums\JobNameEnum;
+use App\Enums\JobStatusEnum;
+use App\Exports\UsersExport;
+use App\Helpers\JobHelper;
 use App\Http\Controllers\Api\BaseApiController;
+use App\Http\Helpers\S3Helper;
 use App\Http\Requests\ImportUsersRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+use App\Http\Requests\UserQueryRequest;
 use App\Http\Resources\LogImportResource;
 use App\Http\Resources\UserResource;
 use App\Imports\UsersImport;
+use App\Jobs\FinishJobTracking;
 use App\Mail\RegisterUserMail;
+use App\Models\JobTracking;
+use App\Models\LogExport;
+use App\Models\LogImport;
 use App\Repositories\LogImportRepository;
 use App\Repositories\UserRepository;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 use Throwable;
 
-class                                                                                                                                                                                                                                                       UserController extends BaseApiController
+class UserController extends BaseApiController
 {
-    public function __construct(protected UserRepository $userRepository, protected LogImportRepository $logImportRepository)
+    public function __construct(
+        protected UserRepository      $userRepository,
+        protected LogImportRepository $logImportRepository
+    )
     {
     }
 
-    public function index()
+    public function index(UserQueryRequest $request)
     {
-        return $this->sendResponse(['users' => UserResource::collection($this->userRepository->all())]);
+        $users = $this->userRepository->getListUser($request->all());
+        return $this->sendResponseWithPaginate(['users' => UserResource::collection($users)], $users, 'List users');
     }
 
     /**
@@ -95,16 +111,41 @@ class                                                                           
     public function import(ImportUsersRequest $request)
     {
         try {
-            $file = $request->file('users');
-            $import = new UsersImport($file->getClientOriginalName() . '_' . date('Y-m-d H-i-s'), auth()->user());
-            $import->queue($file);
+            DB::beginTransaction();
+            $path = $request->file('users');
+            $user = auth()->user();
+            $fileName = $path->getClientOriginalName() . '_' . date('Y-m-d H-i-s') . '.' . $user->id;
+            $jobName = JobHelper::createJobName(JobNameEnum::ImportUser->value, $fileName);
+
+            $import = new UsersImport($fileName, $user, $jobName);
+
+            $file = new \SplFileObject($path);
+            $file->seek(PHP_INT_MAX);
+            // if job fail => logimport, jobtracking not rollback
+            $jobTracking = JobTracking::create([
+                'user_id' => $user->id,
+                'job_name' => $jobName,
+                'status' => JobStatusEnum::Running->value,
+            ]);
+
+            LogImport::create([
+                'user_id' => $user->id,
+                'file_name' => $fileName,
+                'total_row' => $file->key() - 1,
+                'job_tracking_id' => $jobTracking->id,
+            ]);
+
+            $import->queue($path)->chain([new FinishJobTracking($user->id, $jobName)]);
+            DB::commit();
             return $this->sendResponse([], 'Users importing....');
         } catch (\Exception $e) {
+            DB::rollBack();
             return $this->sendErrorResponse($e, $e->getMessage());
         }
     }
 
-    public function logImport()
+    public
+    function logImport()
     {
         return $this->sendResponse(LogImportResource::collection(auth()->user()->logImport()->get()));
     }
@@ -113,12 +154,50 @@ class                                                                           
     {
         try {
             DB::beginTransaction();
-            $user = $this->logImportRepository->delete($id);
+            $this->logImportRepository->delete($id);
             DB::commit();
             return $this->sendResponse([], 'Log has been deleted successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
             return $this->sendErrorResponse($e, $e->getMessage());
         }
+    }
+
+    public function exportUsers(Request $request)
+    {
+        // log_exports => store file path,
+        // job tracking
+        // not query apply
+        $conditions = $request->all();
+        $filePath = 'exports/users_' . date('d-m-Y-H-i-s') . '_' . auth()->user()->id . '.csv';
+        $user = auth()->user();
+        $jobName = JobHelper::createJobName(JobNameEnum::ExportUser->value, $filePath);
+        $jobTracking = JobTracking::create([
+            'user_id' => $user->id,
+            'job_name' => $jobName,
+            'status' => JobStatusEnum::Running->value,
+        ]);
+        LogExport::create([
+            'user_id' => $user->id,
+            'file_path' => $filePath,
+            'job_tracking_id' => $jobTracking->id,
+        ]);
+        (new UsersExport($conditions, $user, $jobName))->queue($filePath)->chain([
+                new FinishJobTracking($user->id, $jobName)
+            ]);
+        return $this->sendResponse([], 'User exporting...');
+    }
+
+    public function jobExportUsers()
+    {
+        // not paginate
+        $jobs = $this->userRepository->getListJobExport();
+        return $this->sendResponse($jobs);
+    }
+
+    public function downloadExportUsers(Request $request)
+    {
+         $path = $request->get('path');
+        return S3Helper::download($path);
     }
 }

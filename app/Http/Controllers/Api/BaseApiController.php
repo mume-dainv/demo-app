@@ -16,6 +16,17 @@ class BaseApiController extends Controller
         return response()->json($data, $statusCode);
     }
 
+    protected function sendResponseWithPaginate($data,$paginate, $message = 'success', $statusCode = ResponseAlias::HTTP_OK)
+    {
+        $data = [
+            'data' => $data,
+            'current_page' => $paginate->currentPage(),
+            'last_page' => $paginate->lastPage(),
+            'message' => $message,
+        ];
+        return response()->json($data, $statusCode);
+    }
+
     protected function sendResponseWithCookie($data, $cookie = [],$message = 'success', $statusCode = ResponseAlias::HTTP_OK)
     {
         $data = [
