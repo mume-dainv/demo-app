@@ -26,6 +26,9 @@ Route::middleware(['auth:api', 'permission'])->prefix('admin')->group(function (
     Route::prefix('users')->group(function () {
         Route::get('/', [\App\Http\Controllers\Api\Admin\UserController::class, 'index']);
         Route::post('/', [\App\Http\Controllers\Api\Admin\UserController::class, 'store']);
+        Route::post('/import', [\App\Http\Controllers\Api\Admin\UserController::class, 'import']);
+        Route::get('/log_import', [\App\Http\Controllers\Api\Admin\UserController::class, 'logImport']);
+        Route::delete('/log_import/{id}', [\App\Http\Controllers\Api\Admin\UserController::class, 'deleteLogImport'])->whereNumber('id');
         Route::get('/{id}', [\App\Http\Controllers\Api\Admin\UserController::class, 'show']);
         Route::put('/{id}', [\App\Http\Controllers\Api\Admin\UserController::class, 'update']);
         Route::delete('/{id}', [\App\Http\Controllers\Api\Admin\UserController::class, 'delete']);
