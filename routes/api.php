@@ -30,6 +30,7 @@ Route::middleware(['auth:api', 'permission'])->prefix('admin')->group(function (
         Route::get('/log_import', [\App\Http\Controllers\Api\Admin\UserController::class, 'logImport']);
         Route::post('/export', [\App\Http\Controllers\Api\Admin\UserController::class, 'exportUsers']);
         Route::get('/export', [\App\Http\Controllers\Api\Admin\UserController::class, 'jobExportUsers']);
+        Route::delete('/export/{id}', [\App\Http\Controllers\Api\Admin\UserController::class, 'deleteExportUsers']);
         Route::post('/download_export', [\App\Http\Controllers\Api\Admin\UserController::class, 'downloadExportUsers']);
         Route::delete('/log_import/{id}', [\App\Http\Controllers\Api\Admin\UserController::class, 'deleteLogImport'])->whereNumber('id');
         Route::get('/{id}', [\App\Http\Controllers\Api\Admin\UserController::class, 'show']);

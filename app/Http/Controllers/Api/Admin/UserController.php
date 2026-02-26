@@ -8,6 +8,7 @@ use App\Exports\UsersExport;
 use App\Helpers\JobHelper;
 use App\Http\Controllers\Api\BaseApiController;
 use App\Http\Requests\ImportUsersRequest;
+use App\Http\Requests\JobExportQuery;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Requests\UserQueryRequest;
@@ -121,7 +122,6 @@ class UserController extends BaseApiController
 
             $file = new \SplFileObject($path);
             $file->seek(PHP_INT_MAX);
-            // if job fail => logimport, jobtracking not rollback
             $jobTracking = JobTracking::create([
                 'user_id' => $user->id,
                 'job_name' => $jobName,
@@ -165,9 +165,6 @@ class UserController extends BaseApiController
 
     public function exportUsers(Request $request)
     {
-        // log_exports => store file path,
-        // job tracking
-        // not query apply
         $conditions = $request->all();
         $filePath = 'exports/users_' . date('d-m-Y-H-i-s') . '_' . auth()->user()->id . '.csv';
         $user = auth()->user();
@@ -188,10 +185,9 @@ class UserController extends BaseApiController
         return $this->sendResponse([], 'User exporting...');
     }
 
-    public function jobExportUsers()
+    public function jobExportUsers(JobExportQuery $request)
     {
-        // not paginate
-        $jobs = $this->userRepository->getListJobExport();
+        $jobs = $this->userRepository->getListJobExport($request->all());
         return $this->sendResponseWithPaginate(JobExportUserResource::collection($jobs), $jobs);
     }
 
@@ -199,5 +195,18 @@ class UserController extends BaseApiController
     {
         $path = $request->get('path');
         return Storage::disk(config('filesystems.default'))->download($path);
+    }
+
+    public function deleteExportUsers($id)
+    {
+        try {
+            DB::beginTransaction();
+            LogExport::find($id)?->delete();
+            DB::commit();
+            return $this->sendResponse([], 'Deleted successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->sendErrorResponse($e, $e->getMessage());
+        }
     }
 }
