@@ -28,8 +28,8 @@ class LogImport extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function jobTracking(): HasOne
+    public function jobTracking(): BelongsTo
     {
-        return $this->hasOne(JobTracking::class);
+        return $this->belongsTo(JobTracking::class);
     }
 }

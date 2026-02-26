@@ -7,11 +7,11 @@ use App\Enums\JobStatusEnum;
 use App\Exports\UsersExport;
 use App\Helpers\JobHelper;
 use App\Http\Controllers\Api\BaseApiController;
-use App\Http\Helpers\S3Helper;
 use App\Http\Requests\ImportUsersRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Requests\UserQueryRequest;
+use App\Http\Resources\JobExportUserResource;
 use App\Http\Resources\LogImportResource;
 use App\Http\Resources\UserResource;
 use App\Imports\UsersImport;
@@ -183,8 +183,8 @@ class UserController extends BaseApiController
             'job_tracking_id' => $jobTracking->id,
         ]);
         (new UsersExport($conditions, $user, $jobName))->queue($filePath)->chain([
-                new FinishJobTracking($user->id, $jobName)
-            ]);
+            new FinishJobTracking($user->id, $jobName)
+        ]);
         return $this->sendResponse([], 'User exporting...');
     }
 
@@ -192,12 +192,12 @@ class UserController extends BaseApiController
     {
         // not paginate
         $jobs = $this->userRepository->getListJobExport();
-        return $this->sendResponse($jobs);
+        return $this->sendResponseWithPaginate(JobExportUserResource::collection($jobs), $jobs);
     }
 
     public function downloadExportUsers(Request $request)
     {
-         $path = $request->get('path');
-        return S3Helper::download($path);
+        $path = $request->get('path');
+        return Storage::disk(config('filesystems.default'))->download($path);
     }
 }

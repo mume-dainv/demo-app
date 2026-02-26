@@ -18,7 +18,7 @@ class UserRepository extends BaseRepository
         $limit = $condition['limit'] ?? 10;
         $page = $condition['page'] ?? 1;
         if (isset($condition['name_like'])) {
-            $queries = array_merge($queries, ['name', 'like', '%' . $condition['name_like'] . '%']);
+            $queries[] = ['name', 'like', '%' . $condition['name_like'] . '%'];
         }
 
         return $this->paginate($queries, ['*'], $page, $limit);
@@ -26,8 +26,8 @@ class UserRepository extends BaseRepository
 
     public function getListJobExport()
     {
-        $user = auth()->user()->logExport()->with('jobTracking')->get();
-        return $user;
+        $user = auth()->user()->logExport()->with('jobTracking');
+        return $user->paginate();
     }
 
 }
