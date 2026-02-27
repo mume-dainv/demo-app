@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Bus\Batchable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -73,10 +72,5 @@ class User extends Authenticatable implements JWTSubject
     public function logExport(): HasOne
     {
         return $this->hasOne(LogExport::class);
-    }
-
-    public function jobTracking(): HasOne
-    {
-        return $this->hasOne(JobTracking::class);
     }
 }

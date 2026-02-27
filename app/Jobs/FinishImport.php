@@ -3,7 +3,7 @@
 namespace App\Jobs;
 
 use App\Enums\JobStatusEnum;
-use App\Models\JobTracking;
+use App\Models\LogImport;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -11,14 +11,14 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 
-class FinishJobTracking implements ShouldQueue
+class FinishImport implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     /**
      * Create a new job instance.
      */
-    public function __construct(protected $userId, protected $jobName)
+    public function __construct(protected $userId, protected $filePath)
     {
         //
     }
@@ -28,9 +28,9 @@ class FinishJobTracking implements ShouldQueue
      */
     public function handle(): void
     {
-        JobTracking::where([
+        LogImport::where([
             'user_id' => $this->userId,
-            'job_name' => $this->jobName
+            'file_name' => $this->filePath
         ])->update([
             'status' => JobStatusEnum::Complete->value
         ]);

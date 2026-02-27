@@ -76,8 +76,8 @@ class UsersImport implements ToCollection, WithHeadingRow, WithChunkReading, Sho
                 )->update(
                     [
                         'errors' => array_merge(json_decode($log->errors ?? '[]'), $dataError),
-                        'row_fail' => $log->row_fail + count($dataError),
-                        'row_success' => $log->row_success + count($dataInsert),
+                        'fail_count' => $log->row_fail + count($dataError),
+                        'success_count' => $log->row_success + count($dataInsert),
                     ]
                 );
             }
@@ -114,22 +114,12 @@ class UsersImport implements ToCollection, WithHeadingRow, WithChunkReading, Sho
         return 200;
     }
 
-    public function fail($exception = null): void
-    {
-        JobTracking::where([
-            'user_id' => $this->user->id,
-            'job_name' => $this->jobName
-        ])->update([
-            'status' => JobStatusEnum::Failed->value
-        ]);
-    }
-
     public function registerEvents(): array
     {
         return [ImportFailed::class => function (ImportFailed $event) {
-            JobTracking::where([
+            LogImport::where([
                 'user_id' => $this->user->id,
-                'job_name' => $this->jobName
+                'file_path' => $this->jobName
             ])->update([
                 'status' => JobStatusEnum::Failed->value
             ]);;

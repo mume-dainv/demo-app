@@ -18,7 +18,7 @@ class JobExportUserResource extends JsonResource
             'id' => $this->id,
             'file_path' => $this->file_path,
             'created_at' => $this->created_at->format('d-m-Y H:i:s'),
-            'status' => $this->jobTracking->status,
+            'status' => $this->status,
         ];
     }
 }

@@ -3,7 +3,7 @@
 namespace App\Exports;
 
 use App\Enums\JobStatusEnum;
-use App\Models\JobTracking;
+use App\Models\LogImport;
 use App\Models\User;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -21,7 +21,7 @@ class UsersExport implements FromCollection, WithHeadings, WithMapping, Responsa
 
     public $writerType = Excel::CSV;
 
-    public function __construct(protected $conditions, protected $user, protected $jobName)
+    public function __construct(protected $conditions, protected $user, protected $filePath)
     {
 
     }
@@ -54,7 +54,7 @@ class UsersExport implements FromCollection, WithHeadings, WithMapping, Responsa
 
     public function map($row): array
     {
-        $logging = $row->userLogging()->orderBy('updated_at', 'DESC')->first();
+        $logging = $row->userLogging?->first();
         return [
             $row->id,
             $row->name,
@@ -66,9 +66,9 @@ class UsersExport implements FromCollection, WithHeadings, WithMapping, Responsa
      public function registerEvents(): array
      {
          return [ImportFailed::class => function (ImportFailed $event) {
-             JobTracking::where([
+             LogImport::where([
                  'user_id' => $this->user->id,
-                 'job_name' => $this->jobName
+                 'file_path' => $this->filePath
              ])->update([
                  'status' => JobStatusEnum::Failed->value
              ]);

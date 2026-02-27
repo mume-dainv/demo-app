@@ -2,10 +2,8 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
-use App\Enums\JobNameEnum;
 use App\Enums\JobStatusEnum;
 use App\Exports\UsersExport;
-use App\Helpers\JobHelper;
 use App\Http\Controllers\Api\BaseApiController;
 use App\Http\Requests\ImportUsersRequest;
 use App\Http\Requests\JobExportQuery;
@@ -16,11 +14,11 @@ use App\Http\Resources\JobExportUserResource;
 use App\Http\Resources\LogImportResource;
 use App\Http\Resources\UserResource;
 use App\Imports\UsersImport;
-use App\Jobs\FinishJobTracking;
+use App\Jobs\FinishExport;
+use App\Jobs\FinishImport;
 use App\Mail\RegisterUserMail;
-use App\Models\JobTracking;
 use App\Models\LogExport;
-use App\Models\LogImport;
+use App\Repositories\LogExportRepository;
 use App\Repositories\LogImportRepository;
 use App\Repositories\UserRepository;
 use Illuminate\Http\Request;
@@ -36,7 +34,8 @@ class UserController extends BaseApiController
 {
     public function __construct(
         protected UserRepository      $userRepository,
-        protected LogImportRepository $logImportRepository
+        protected LogImportRepository $logImportRepository,
+        protected LogExportRepository $logExportRepository,
     )
     {
     }
@@ -115,27 +114,20 @@ class UserController extends BaseApiController
             DB::beginTransaction();
             $path = $request->file('users');
             $user = auth()->user();
-            $fileName = $path->getClientOriginalName() . '_' . date('Y-m-d H-i-s') . '.' . $user->id;
-            $jobName = JobHelper::createJobName(JobNameEnum::ImportUser->value, $fileName);
+            $fileName = $path->getClientOriginalName() . '_' . date('Y-m-d H-i-s') . '_' . Str::random(6) . '.' . $user->id;
 
-            $import = new UsersImport($fileName, $user, $jobName);
+            $import = new UsersImport($fileName, $user, $fileName);
 
             $file = new \SplFileObject($path);
             $file->seek(PHP_INT_MAX);
-            $jobTracking = JobTracking::create([
-                'user_id' => $user->id,
-                'job_name' => $jobName,
-                'status' => JobStatusEnum::Running->value,
-            ]);
-
-            LogImport::create([
+            $this->logImportRepository->create([
                 'user_id' => $user->id,
                 'file_name' => $fileName,
                 'total_row' => $file->key() - 1,
-                'job_tracking_id' => $jobTracking->id,
+                'status' => JobStatusEnum::Running->value,
             ]);
 
-            $import->queue($path)->chain([new FinishJobTracking($user->id, $jobName)]);
+            $import->queue($path)->chain([new FinishImport($user->id, $fileName)]);
             DB::commit();
             return $this->sendResponse([], 'Users importing....');
         } catch (\Exception $e) {
@@ -144,8 +136,7 @@ class UserController extends BaseApiController
         }
     }
 
-    public
-    function logImport()
+    public function logImport()
     {
         return $this->sendResponse(LogImportResource::collection(auth()->user()->logImport()->get()));
     }
@@ -166,21 +157,15 @@ class UserController extends BaseApiController
     public function exportUsers(Request $request)
     {
         $conditions = $request->all();
-        $filePath = 'exports/users_' . date('d-m-Y-H-i-s') . '_' . auth()->user()->id . '.csv';
         $user = auth()->user();
-        $jobName = JobHelper::createJobName(JobNameEnum::ExportUser->value, $filePath);
-        $jobTracking = JobTracking::create([
-            'user_id' => $user->id,
-            'job_name' => $jobName,
-            'status' => JobStatusEnum::Running->value,
-        ]);
-        LogExport::create([
+        $filePath = 'exports/users_' . date('d-m-Y-H-i-s') . '_' . Str::random(6) . $user->id . '.csv';
+        $this->logExportRepository->create([
             'user_id' => $user->id,
             'file_path' => $filePath,
-            'job_tracking_id' => $jobTracking->id,
+            'status' => JobStatusEnum::Running->value,
         ]);
-        (new UsersExport($conditions, $user, $jobName))->queue($filePath)->chain([
-            new FinishJobTracking($user->id, $jobName)
+        (new UsersExport($conditions, $user, $filePath))->queue($filePath)->chain([
+            new FinishExport($user->id, $filePath)
         ]);
         return $this->sendResponse([], 'User exporting...');
     }
@@ -193,8 +178,12 @@ class UserController extends BaseApiController
 
     public function downloadExportUsers(Request $request)
     {
-        $path = $request->get('path');
-        return Storage::disk(config('filesystems.default'))->download($path);
+        try {
+            $path = $request->get('path');
+            return Storage::disk(config('filesystems.default'))->download($path);
+        } catch (\Exception $e) {
+            return $this->sendErrorResponse($e, $e->getMessage() || 'File not found.');
+        }
     }
 
     public function deleteExportUsers($id)

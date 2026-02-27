@@ -26,13 +26,13 @@ class UserRepository extends BaseRepository
 
     public function getListJobExport($conditions)
     {
-        $user = auth()->user()->logExport();
+        $logExports = auth()->user()->logExport();
         $page = $conditions['page'] ?? 1;
         $limit = $conditions['limit'] ?? 10;
         if (isset($conditions['file_path'])) {
-            $user->where('file_path', 'like', '%' . $conditions['file_path'] . '%');
+            $logExports->where('file_path', 'like', '%' . $conditions['file_path'] . '%');
         }
-        return $user->with('jobTracking')->paginate($limit, ['*'], 'page', $page);
+        return $logExports->paginate($limit, ['*'], 'page', $page);
     }
 
 }
