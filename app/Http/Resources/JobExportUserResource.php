@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class LogImportResource extends JsonResource
+class JobExportUserResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -16,13 +16,9 @@ class LogImportResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'errors' => json_decode($this->errors),
-            'file_name' => $this->file_name,
-            'status' => $this->status,
-            'total_rows' => $this->total_row,
-            'fail_count' => $this->fail_count,
-            'success_count' => $this->success_count,
+            'file_path' => $this->file_path,
             'created_at' => $this->created_at->format('d-m-Y H:i:s'),
+            'status' => $this->status,
         ];
     }
 }

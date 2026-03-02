@@ -6,23 +6,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class LogImport extends Model
+class LogExport extends Model
 {
     use HasFactory;
 
-    protected $table = 'log_import';
-
     protected $fillable = [
         'user_id',
-        'messages',
-        'file_name',
-        'total_row',
-        'fail_count',
-        'success_count',
-        'status'
+        'status',
+        'file_path',
     ];
 
-    public function User(): BelongsTo
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
